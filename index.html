@@ -53,7 +53,7 @@
         .popup-custom a:hover { text-decoration: underline; }
         
         /* 🌟 狀態按鈕群 */
-        .status-group { display: flex; flex-wrap: wrap; gap: 5px; margin-top: 15px; }
+        .status-group { display: flex; flex-wrap: wrap; gap: 5px; margin-top: 12px; }
         .s-btn { flex: 1; min-width: 45%; padding: 6px 2px; border: none; border-radius: 4px; font-weight: bold; font-size: 12px; cursor: pointer; transition: 0.2s; color: white; }
         .s-none { background: #95a5a6; } .s-none:hover { background: #7f8c8d; }
         .s-want { background: #e74c3c; } .s-want:hover { background: #c0392b; }
@@ -169,7 +169,6 @@
     <div id="map"></div>
     
     <script src="ski_data.js"></script>
-    
     <script src="https://unpkg.com/leaflet@1.9.4/dist/leaflet.js"></script>
     <script src="https://unpkg.com/leaflet.markercluster@1.4.1/dist/leaflet.markercluster.js"></script>
 
@@ -188,10 +187,8 @@
 
         var map = L.map('map', { center: [36.2048, 138.2529], zoom: 5, minZoom: 5, maxBounds: L.latLngBounds([22.0, 120.0], [48.0, 155.0]) });
         L.tileLayer('https://{s}.tile.openstreetmap.org/{z}/{x}/{y}.png', { maxZoom: 18 }).addTo(map);
-        
         var markers = L.markerClusterGroup({ chunkedLoading: true, maxClusterRadius: 40, disableClusteringAtZoom: 10 });
 
-        // 🌟 收縮切換
         window.togglePanel = function() {
             var content = document.getElementById('panelContent');
             var icon = document.getElementById('toggleIcon');
@@ -208,7 +205,6 @@
             }
         };
 
-        // 🌟 核心畫圖邏輯
         window.renderMap = function() {
             markers.clearLayers();
             var currentFilter = document.getElementById('filterSelect').value;
@@ -234,16 +230,12 @@
                 if (status === 'been') countBeen++;
                 if (status === 'return') countReturn++;
 
-                // 🌟 新增：有標示的 (過濾掉沒有標記的藍點)
                 if (currentFilter === 'marked') {
                     if (status === 'none') return; 
-                } 
-                // 原本的指定單一顏色過濾
-                else if (currentFilter !== 'all') {
+                } else if (currentFilter !== 'all') {
                     if (status !== currentFilter) return;
                 }
 
-                // 藍色未標記雪場的雪道數量過濾
                 if (currentFilter === 'all' && hasTrailFilter && status === 'none') {
                     var trails = parseInt(resort.trails);
                     if (isNaN(trails) || trails < tMin || trails > tMax) return; 
@@ -251,15 +243,16 @@
 
                 countFiltered++;
 
+                // 🌟 排版重組：分離出 連結、描述、雪道數，並加上 DIV 與下方間距
                 var titleZh = (resort.name_zh && resort.name_zh !== 'nan') ? ` <span style="color:#e67e22; font-size:16px;">(${resort.name_zh})</span>` : '';
                 var titleEn = (resort.name_en && resort.name_en !== 'nan') ? `<div style="color:#7f8c8d; font-size:12px; margin-top:2px; margin-bottom:5px;">${resort.name_en}</div>` : '';
-                var trailsInfo = (resort.trails && resort.trails !== 'nan') ? `<div style="background:#e8f6f3; color:#16a085; padding:4px 8px; border-radius:4px; display:inline-block; margin-bottom:8px; font-size:13px;">🎿 規模：<b>${resort.trails}</b> 條雪道</div><br>` : '';
-                var urlInfo = resort.url ? `🔗 <a href="${resort.url}" target="_blank">查看 Snoway 詳細資訊</a>` : '';
-                var descInfo = resort.description ? `${resort.description}<br>` : '';
+                
+                var urlInfo = resort.url ? `<div style="margin-bottom: 8px;">🔗 <a href="${resort.url}" target="_blank">查看 Snoway 詳細資訊</a></div>` : '';
+                var descInfo = resort.description ? `<div style="margin-bottom: 8px; color: #555;">${resort.description}</div>` : '';
+                var trailsInfo = (resort.trails && resort.trails !== 'nan') ? `<div style="background:#e8f6f3; color:#16a085; padding:4px 8px; border-radius:4px; display:inline-block; margin-bottom:8px; font-size:13px;">🎿 規模：<b>${resort.trails}</b> 條雪道</div>` : '';
 
                 var marker = L.marker([resort.lat, resort.lng], { icon: icons[status] });
                 
-                // 🌟 永遠顯示的地名標籤 (放大地圖時浮現)
                 marker.bindTooltip(baseName, {
                     permanent: true,       
                     direction: 'bottom',   
@@ -268,10 +261,14 @@
                     opacity: 0.9           
                 });
                 
+                // 🌟 把連結 (urlInfo) 放在分隔線下方、描述 (descInfo) 的正上方
                 var popupContent = `
                     <div class="popup-custom">
                         <b>${baseName}</b>${titleZh}${titleEn}
-                        <hr>${descInfo}${trailsInfo}${urlInfo}
+                        <hr>
+                        ${urlInfo}
+                        ${descInfo}
+                        ${trailsInfo}
                         <div class="status-group">
                             <button class="s-btn s-want" onclick="setStatus('${baseName}', 'want')">🔴 想去</button>
                             <button class="s-btn s-been" onclick="setStatus('${baseName}', 'been')">🟢 去過</button>
@@ -302,14 +299,12 @@
             renderMap(); 
         };
 
-        // 🌟 匯出資料 (複製同步碼)
         window.exportData = function() {
             var data = localStorage.getItem('skiResortStatus');
             if (!data || data === '{}') {
                 alert('目前沒有任何標記資料可以匯出喔！');
                 return;
             }
-            
             navigator.clipboard.writeText(data).then(function() {
                 alert('✅ 同步碼已成功複製！\n請透過 LINE 或 Email 將這串代碼傳到你的另一台裝置。');
             }).catch(function() {
@@ -317,10 +312,8 @@
             });
         };
 
-        // 🌟 匯入資料 (貼上同步碼)
         window.importData = function() {
             var input = prompt('📥 請在下方貼上你從另一台裝置複製過來的「同步碼」：\n(注意：這將會覆蓋當前裝置的標記紀錄)');
-            
             if (input) {
                 try {
                     var parsed = JSON.parse(input);
