@@ -55,6 +55,19 @@
         .s-been { background: #2ecc71; } .s-been:hover { background: #27ae60; }
         .s-return { background: #f1c40f; color: #8a6d3b; } .s-return:hover { background: #f39c12; color: white; }
         
+        /* 🌟 新增：地圖上單點直接顯示的小標籤外觀 */
+        .resort-label {
+            background-color: rgba(255, 255, 255, 0.85); /* 半透明白底，不完全遮擋地圖 */
+            border: 1px solid #7f8c8d;
+            color: #2c3e50;
+            font-weight: bold;
+            font-size: 11px;
+            padding: 2px 4px;
+            border-radius: 4px;
+            box-shadow: 0 1px 3px rgba(0,0,0,0.3);
+            white-space: nowrap;
+        }
+
         /* 🌟 右下角霸氣浮水印 */
         #watermark { 
             position: absolute; 
@@ -88,6 +101,8 @@
             .stat-highlight span { font-size: 14px; }
             #watermark { font-size: 12px; padding: 6px 10px; bottom: 15px; border-width: 2px; }
             .popup-custom { min-width: 200px; }
+            /* 手機上的地名標籤可以稍微小一點 */
+            .resort-label { font-size: 10px; padding: 1px 3px; }
         }
     </style>
 </head>
@@ -159,9 +174,11 @@
 
         var map = L.map('map', { center: [36.2048, 138.2529], zoom: 5, minZoom: 5, maxBounds: L.latLngBounds([22.0, 120.0], [48.0, 155.0]) });
         L.tileLayer('https://{s}.tile.openstreetmap.org/{z}/{x}/{y}.png', { maxZoom: 18 }).addTo(map);
-        var markers = L.markerClusterGroup({ chunkedLoading: true, maxClusterRadius: 40, disableClusteringAtZoom: 9 });
+        
+        // 設定叢聚行為，數字大於預設才顯示圈圈，縮小時平滑動畫
+        var markers = L.markerClusterGroup({ chunkedLoading: true, maxClusterRadius: 40, disableClusteringAtZoom: 10 });
 
-        // 🌟 改變按鈕的文字與收折邏輯
+        // 🌟 收縮切換
         window.togglePanel = function() {
             var content = document.getElementById('panelContent');
             var icon = document.getElementById('toggleIcon');
@@ -170,25 +187,22 @@
             if (content.style.display === 'none') {
                 content.style.display = 'block';
                 icon.innerText = '▼';
-                titleText.innerText = '資訊視窗縮小'; // 展開狀態，提示可縮小
+                titleText.innerText = '資訊視窗縮小'; 
             } else {
                 content.style.display = 'none';
                 icon.innerText = '▲';
-                titleText.innerText = '資訊視窗展開'; // 縮小狀態，提示可展開
+                titleText.innerText = '資訊視窗展開'; 
             }
         };
 
-        // 🌟 核心畫圖、篩選與統計邏輯
+        // 🌟 核心畫圖邏輯
         window.renderMap = function() {
             markers.clearLayers();
-            
             var currentFilter = document.getElementById('filterSelect').value;
             var minInput = document.getElementById('trailMin').value.trim();
             var maxInput = document.getElementById('trailMax').value.trim();
-            
             var hasTrailFilter = false;
             var tMin = 0, tMax = 9999;
-            
             if (minInput !== "" || maxInput !== "") {
                 hasTrailFilter = true;
                 tMin = minInput !== "" ? parseInt(minInput) : 0;
@@ -199,9 +213,7 @@
 
             allSkiResorts.forEach(function(resort) {
                 if (!resort.lat || !resort.lng || resort.lat === 0) return; 
-
                 countTotal++; 
-
                 var baseName = resort.name_ja || resort.name; 
                 var status = userStatus[baseName] || 'none';
 
@@ -210,39 +222,34 @@
                 if (status === 'return') countReturn++;
 
                 if (currentFilter !== 'all' && status !== currentFilter) return;
-
                 if (currentFilter === 'all' && hasTrailFilter && status === 'none') {
                     var trails = parseInt(resort.trails);
-                    if (isNaN(trails) || trails < tMin || trails > tMax) {
-                        return; 
-                    }
+                    if (isNaN(trails) || trails < tMin || trails > tMax) return; 
                 }
 
                 countFiltered++;
 
                 var titleZh = (resort.name_zh && resort.name_zh !== 'nan') ? ` <span style="color:#e67e22; font-size:16px;">(${resort.name_zh})</span>` : '';
                 var titleEn = (resort.name_en && resort.name_en !== 'nan') ? `<div style="color:#7f8c8d; font-size:12px; margin-top:2px; margin-bottom:5px;">${resort.name_en}</div>` : '';
-                
-                var trailsInfo = (resort.trails && resort.trails !== 'nan') 
-                    ? `<div style="background:#e8f6f3; color:#16a085; padding:4px 8px; border-radius:4px; display:inline-block; margin-bottom:8px; font-size:13px;">🎿 規模：<b>${resort.trails}</b> 條雪道</div><br>` 
-                    : '';
-                    
+                var trailsInfo = (resort.trails && resort.trails !== 'nan') ? `<div style="background:#e8f6f3; color:#16a085; padding:4px 8px; border-radius:4px; display:inline-block; margin-bottom:8px; font-size:13px;">🎿 規模：<b>${resort.trails}</b> 條雪道</div><br>` : '';
                 var urlInfo = resort.url ? `🔗 <a href="${resort.url}" target="_blank">查看 Snoway 詳細資訊</a>` : '';
                 var descInfo = resort.description ? `${resort.description}<br>` : '';
 
                 var marker = L.marker([resort.lat, resort.lng], { icon: icons[status] });
                 
-                var tooltipText = baseName + (resort.name_zh && resort.name_zh !== 'nan' ? ` (${resort.name_zh})` : '');
-                marker.bindTooltip(tooltipText, {direction: 'top', offset: [0, -20]});
+                // 🌟 新增：永遠顯示的日文名稱小標籤
+                marker.bindTooltip(baseName, {
+                    permanent: true,       // 永遠顯示 (當圖釘沒有被叢聚隱藏時)
+                    direction: 'bottom',   // 顯示在圖釘下方
+                    offset: [0, 5],        // 微調位置，不要蓋住圖釘底部
+                    className: 'resort-label', // 套用我們上面寫的精緻外觀 CSS
+                    opacity: 0.9           // 微微透明感
+                });
                 
                 var popupContent = `
                     <div class="popup-custom">
-                        <b>${baseName}</b>${titleZh}
-                        ${titleEn}
-                        <hr>
-                        ${descInfo}
-                        ${trailsInfo}
-                        ${urlInfo}
+                        <b>${baseName}</b>${titleZh}${titleEn}
+                        <hr>${descInfo}${trailsInfo}${urlInfo}
                         <div class="status-group">
                             <button class="s-btn s-want" onclick="setStatus('${baseName}', 'want')">🔴 想去</button>
                             <button class="s-btn s-been" onclick="setStatus('${baseName}', 'been')">🟢 去過</button>
