@@ -40,6 +40,11 @@
         .stat-highlight { color: #2980b9; font-size: 14px; font-weight: bold; margin-top: 5px; padding-top: 5px; border-top: 1px dashed #bdc3c7; }
         .stat-highlight span { color: #e74c3c; font-size: 16px; }
 
+        /* 🌟 跨裝置同步按鈕 */
+        .sync-btn-group { display: flex; gap: 5px; margin-top: 8px; }
+        .sync-btn { flex: 1; padding: 8px 4px; background: #8e44ad; color: white; border: none; border-radius: 4px; cursor: pointer; font-size: 13px; font-weight: bold; }
+        .sync-btn:hover { background: #9b59b6; }
+
         /* 🌟 彈出視窗排版 */
         .popup-custom { font-size: 14px; line-height: 1.5; min-width: 250px; }
         .popup-custom b { color: #2c3e50; font-size: 18px; }
@@ -55,9 +60,9 @@
         .s-been { background: #2ecc71; } .s-been:hover { background: #27ae60; }
         .s-return { background: #f1c40f; color: #8a6d3b; } .s-return:hover { background: #f39c12; color: white; }
         
-        /* 🌟 新增：地圖上單點直接顯示的小標籤外觀 */
+        /* 🌟 地圖上單點直接顯示的小標籤外觀 */
         .resort-label {
-            background-color: rgba(255, 255, 255, 0.85); /* 半透明白底，不完全遮擋地圖 */
+            background-color: rgba(255, 255, 255, 0.85);
             border: 1px solid #7f8c8d;
             color: #2c3e50;
             font-weight: bold;
@@ -99,9 +104,9 @@
             .stat-box { font-size: 12px; padding: 8px; }
             .stat-highlight { font-size: 12px; margin-top: 4px; padding-top: 4px; }
             .stat-highlight span { font-size: 14px; }
+            .sync-btn { font-size: 11px; padding: 6px 2px; }
             #watermark { font-size: 12px; padding: 6px 10px; bottom: 15px; border-width: 2px; }
             .popup-custom { min-width: 200px; }
-            /* 手機上的地名標籤可以稍微小一點 */
             .resort-label { font-size: 10px; padding: 1px 3px; }
         }
     </style>
@@ -145,6 +150,14 @@
                 <div>🟡 還想去: <span id="s-return">0</span></div>
                 <div class="stat-highlight">畫面顯示: <span id="s-filtered">0</span></div>
             </div>
+
+            <hr>
+            
+            <h3>🔄 跨裝置同步</h3>
+            <div class="sync-btn-group">
+                <button class="sync-btn" onclick="exportData()">📤 複製同步碼</button>
+                <button class="sync-btn" onclick="importData()">📥 貼上同步碼</button>
+            </div>
         </div>
     </div>
 
@@ -175,7 +188,6 @@
         var map = L.map('map', { center: [36.2048, 138.2529], zoom: 5, minZoom: 5, maxBounds: L.latLngBounds([22.0, 120.0], [48.0, 155.0]) });
         L.tileLayer('https://{s}.tile.openstreetmap.org/{z}/{x}/{y}.png', { maxZoom: 18 }).addTo(map);
         
-        // 設定叢聚行為，數字大於預設才顯示圈圈，縮小時平滑動畫
         var markers = L.markerClusterGroup({ chunkedLoading: true, maxClusterRadius: 40, disableClusteringAtZoom: 10 });
 
         // 🌟 收縮切換
@@ -237,13 +249,13 @@
 
                 var marker = L.marker([resort.lat, resort.lng], { icon: icons[status] });
                 
-                // 🌟 新增：永遠顯示的日文名稱小標籤
+                // 🌟 永遠顯示的地名標籤 (放大地圖時浮現)
                 marker.bindTooltip(baseName, {
-                    permanent: true,       // 永遠顯示 (當圖釘沒有被叢聚隱藏時)
-                    direction: 'bottom',   // 顯示在圖釘下方
-                    offset: [0, 5],        // 微調位置，不要蓋住圖釘底部
-                    className: 'resort-label', // 套用我們上面寫的精緻外觀 CSS
-                    opacity: 0.9           // 微微透明感
+                    permanent: true,       
+                    direction: 'bottom',   
+                    offset: [0, 5],        
+                    className: 'resort-label', 
+                    opacity: 0.9           
                 });
                 
                 var popupContent = `
@@ -278,6 +290,42 @@
             }
             localStorage.setItem('skiResortStatus', JSON.stringify(userStatus));
             renderMap(); 
+        };
+
+        // 🌟 匯出資料 (複製同步碼)
+        window.exportData = function() {
+            var data = localStorage.getItem('skiResortStatus');
+            if (!data || data === '{}') {
+                alert('目前沒有任何標記資料可以匯出喔！');
+                return;
+            }
+            
+            navigator.clipboard.writeText(data).then(function() {
+                alert('✅ 同步碼已成功複製！\n請透過 LINE 或 Email 將這串代碼傳到你的另一台裝置。');
+            }).catch(function() {
+                prompt('請手動複製以下同步碼，並傳送到另一台裝置：', data);
+            });
+        };
+
+        // 🌟 匯入資料 (貼上同步碼)
+        window.importData = function() {
+            var input = prompt('📥 請在下方貼上你從另一台裝置複製過來的「同步碼」：\n(注意：這將會覆蓋當前裝置的標記紀錄)');
+            
+            if (input) {
+                try {
+                    var parsed = JSON.parse(input);
+                    if (typeof parsed === 'object') {
+                        localStorage.setItem('skiResortStatus', JSON.stringify(parsed));
+                        userStatus = parsed;
+                        renderMap();
+                        alert('🎉 資料同步成功！地圖標記已經更新！');
+                    } else {
+                        alert('❌ 發生錯誤：這看起來不像正確的同步碼。');
+                    }
+                } catch(e) {
+                    alert('❌ 無效的同步碼！請確認你貼上的內容是否完整，開頭和結尾應該是 { 和 }。');
+                }
+            }
         };
 
         renderMap();
