@@ -23,7 +23,7 @@
         #panelContent { margin-top: 5px; }
         
         .control-panel h3 { margin: 0 0 8px 0; font-size: 15px; color: #2c3e50; font-weight: bold; }
-        .control-panel select { width: 100%; padding: 8px; font-size: 15px; font-weight: bold; border-radius: 5px; border: 1px solid #bdc3c7; outline: none; cursor: pointer; margin-bottom: 8px; }
+        .control-panel select { width: 100%; padding: 8px; font-size: 14px; font-weight: bold; border-radius: 5px; border: 1px solid #bdc3c7; outline: none; cursor: pointer; margin-bottom: 8px; }
         .control-panel hr { border: 0; border-top: 1px solid #ecf0f1; margin: 12px 0; }
         
         /* 🌟 雙格雪道數量篩選區 */
@@ -96,7 +96,7 @@
             .control-panel { width: 190px; padding: 10px; top: 10px; right: 10px; }
             .panel-header { font-size: 13px; padding: 6px 10px; }
             .control-panel h3 { font-size: 13px; margin-bottom: 5px; }
-            .control-panel select { font-size: 13px; padding: 5px; margin-bottom: 5px; }
+            .control-panel select { font-size: 12px; padding: 5px; margin-bottom: 5px; }
             .control-panel hr { margin: 8px 0; }
             .trail-filter-box input { padding: 5px; font-size: 12px; }
             .trail-filter-box button { padding: 5px 8px; font-size: 12px; }
@@ -124,6 +124,7 @@
             <h3>👁️ 地圖顯示模式</h3>
             <select id="filterSelect" onchange="renderMap()">
                 <option value="all">🔵 顯示全部雪場</option>
+                <option value="marked">🌟 有標示的 (紅/綠/黃)</option>
                 <option value="want">🔴 想去的</option>
                 <option value="been">🟢 去過的</option>
                 <option value="return">🟡 去過還想去的</option>
@@ -233,7 +234,16 @@
                 if (status === 'been') countBeen++;
                 if (status === 'return') countReturn++;
 
-                if (currentFilter !== 'all' && status !== currentFilter) return;
+                // 🌟 新增：有標示的 (過濾掉沒有標記的藍點)
+                if (currentFilter === 'marked') {
+                    if (status === 'none') return; 
+                } 
+                // 原本的指定單一顏色過濾
+                else if (currentFilter !== 'all') {
+                    if (status !== currentFilter) return;
+                }
+
+                // 藍色未標記雪場的雪道數量過濾
                 if (currentFilter === 'all' && hasTrailFilter && status === 'none') {
                     var trails = parseInt(resort.trails);
                     if (isNaN(trails) || trails < tMin || trails > tMax) return; 
