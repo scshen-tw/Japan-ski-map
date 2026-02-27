@@ -11,8 +11,17 @@
         body { margin: 0; padding: 0; font-family: "Helvetica Neue", Helvetica, Arial, sans-serif; background-color: #f5f5f5; }
         #map { height: 100vh; width: 100%; background-color: #e5e3df; }
         
-        /* 🌟 右上角控制面板 (電腦版預設) */
-        .control-panel { position: absolute; top: 20px; right: 20px; z-index: 9999; background: white; padding: 15px; border-radius: 10px; box-shadow: 0 4px 15px rgba(0,0,0,0.3); border: 2px solid #2c3e50; width: 240px; }
+        /* 🌟 右上角控制面板 */
+        .control-panel { position: absolute; top: 20px; right: 20px; z-index: 9999; background: white; padding: 15px; border-radius: 10px; box-shadow: 0 4px 15px rgba(0,0,0,0.3); border: 2px solid #2c3e50; width: 240px; transition: 0.3s; }
+        
+        /* 🌟 收折標題區塊 */
+        .panel-header { display: flex; justify-content: space-between; align-items: center; cursor: pointer; font-size: 16px; font-weight: bold; color: #2c3e50; }
+        .panel-header:hover { color: #2980b9; }
+        #toggleIcon { font-size: 14px; transition: transform 0.3s; }
+
+        /* 內容區塊 */
+        #panelContent { margin-top: 10px; }
+        
         .control-panel h3 { margin: 0 0 8px 0; font-size: 15px; color: #2c3e50; font-weight: bold; }
         .control-panel select { width: 100%; padding: 8px; font-size: 15px; font-weight: bold; border-radius: 5px; border: 1px solid #bdc3c7; outline: none; cursor: pointer; margin-bottom: 8px; }
         .control-panel hr { border: 0; border-top: 1px solid #ecf0f1; margin: 12px 0; }
@@ -46,7 +55,7 @@
         .s-been { background: #2ecc71; } .s-been:hover { background: #27ae60; }
         .s-return { background: #f1c40f; color: #8a6d3b; } .s-return:hover { background: #f39c12; color: white; }
         
-        /* 🌟 右下角霸氣浮水印 (電腦版預設) */
+        /* 🌟 右下角霸氣浮水印 */
         #watermark { 
             position: absolute; 
             bottom: 25px; 
@@ -64,38 +73,20 @@
             box-shadow: 0 4px 10px rgba(0,0,0,0.2);
         }
 
-        /* 📱 ＝＝＝＝ 手機版專屬縮放設定 (核心魔法) ＝＝＝＝ */
+        /* 📱 手機版專屬縮放設定 */
         @media (max-width: 768px) {
-            /* 把右上角面板縮小到極致，但不影響閱讀 */
-            .control-panel { 
-                width: 160px; /* 寬度大幅縮小 */
-                padding: 8px; /* 內邊距變薄 */
-                top: 10px; 
-                right: 10px; 
-            }
-            .control-panel h3 { font-size: 12px; margin-bottom: 5px; }
-            .control-panel select { font-size: 12px; padding: 4px; margin-bottom: 5px; }
-            .control-panel hr { margin: 6px 0; }
-            
-            /* 縮小輸入框跟按鈕 */
-            .trail-filter-box input { padding: 4px; font-size: 12px; }
-            .trail-filter-box button { padding: 4px 8px; font-size: 12px; }
+            .control-panel { width: 180px; padding: 10px; top: 10px; right: 10px; }
+            .panel-header { font-size: 14px; }
+            .control-panel h3 { font-size: 13px; margin-bottom: 5px; }
+            .control-panel select { font-size: 13px; padding: 5px; margin-bottom: 5px; }
+            .control-panel hr { margin: 8px 0; }
+            .trail-filter-box input { padding: 5px; font-size: 12px; }
+            .trail-filter-box button { padding: 5px 8px; font-size: 12px; }
             .filter-hint { font-size: 10px; margin-top: 4px; }
-            
-            /* 縮小儀表板數字字體 */
-            .stat-box { font-size: 11px; padding: 6px; }
-            .stat-highlight { font-size: 11px; margin-top: 4px; padding-top: 4px; }
-            .stat-highlight span { font-size: 13px; }
-
-            /* 把霸氣浮水印在手機上縮回精緻小巧的尺寸 */
-            #watermark { 
-                font-size: 12px; 
-                padding: 6px 10px; 
-                bottom: 15px; 
-                border-width: 2px; 
-            }
-
-            /* 避免手機彈出視窗超出版面 */
+            .stat-box { font-size: 12px; padding: 8px; }
+            .stat-highlight { font-size: 12px; margin-top: 4px; padding-top: 4px; }
+            .stat-highlight span { font-size: 14px; }
+            #watermark { font-size: 12px; padding: 6px 10px; bottom: 15px; border-width: 2px; }
             .popup-custom { min-width: 200px; }
         }
     </style>
@@ -103,34 +94,42 @@
 <body>
 
     <div class="control-panel">
-        <h3>👁️ 地圖顯示模式</h3>
-        <select id="filterSelect" onchange="renderMap()">
-            <option value="all">🔵 顯示全部雪場</option>
-            <option value="want">🔴 想去的</option>
-            <option value="been">🟢 去過的</option>
-            <option value="return">🟡 去過還想去的</option>
-        </select>
-        
-        <hr>
-
-        <h3>🎿 雪道數量篩選</h3>
-        <div class="trail-filter-box">
-            <input type="number" id="trailMin" placeholder="最少" min="0" onkeypress="if(event.keyCode==13) renderMap()">
-            <span>~</span>
-            <input type="number" id="trailMax" placeholder="最多" min="0" onkeypress="if(event.keyCode==13) renderMap()">
-            <button onclick="renderMap()">套用</button>
+        <div class="panel-header" onclick="togglePanel()">
+            <span>⚙️ 控制與統計</span>
+            <span id="toggleIcon">▼</span>
         </div>
-        <div class="filter-hint">※ 已標記顏色的雪場將永遠顯示。</div>
+        
+        <div id="panelContent">
+            <hr style="margin-top: 8px;">
+            <h3>👁️ 地圖顯示模式</h3>
+            <select id="filterSelect" onchange="renderMap()">
+                <option value="all">🔵 顯示全部雪場</option>
+                <option value="want">🔴 想去的</option>
+                <option value="been">🟢 去過的</option>
+                <option value="return">🟡 去過還想去的</option>
+            </select>
+            
+            <hr>
 
-        <hr>
+            <h3>🎿 雪道數量篩選</h3>
+            <div class="trail-filter-box">
+                <input type="number" id="trailMin" placeholder="最少" min="0" onkeypress="if(event.keyCode==13) renderMap()">
+                <span>~</span>
+                <input type="number" id="trailMax" placeholder="最多" min="0" onkeypress="if(event.keyCode==13) renderMap()">
+                <button onclick="renderMap()">套用</button>
+            </div>
+            <div class="filter-hint">※ 已標記顏色的雪場將永遠顯示。</div>
 
-        <h3>📊 統計資訊</h3>
-        <div class="stat-box">
-            <div>全部雪場: <span id="s-total">0</span></div>
-            <div>🔴 想去: <span id="s-want">0</span></div>
-            <div>🟢 去過: <span id="s-been">0</span></div>
-            <div>🟡 還想去: <span id="s-return">0</span></div>
-            <div class="stat-highlight">畫面顯示: <span id="s-filtered">0</span></div>
+            <hr>
+
+            <h3>📊 統計資訊</h3>
+            <div class="stat-box">
+                <div>全部雪場: <span id="s-total">0</span></div>
+                <div>🔴 想去: <span id="s-want">0</span></div>
+                <div>🟢 去過: <span id="s-been">0</span></div>
+                <div>🟡 還想去: <span id="s-return">0</span></div>
+                <div class="stat-highlight">畫面顯示: <span id="s-filtered">0</span></div>
+            </div>
         </div>
     </div>
 
@@ -161,6 +160,25 @@
         var map = L.map('map', { center: [36.2048, 138.2529], zoom: 5, minZoom: 5, maxBounds: L.latLngBounds([22.0, 120.0], [48.0, 155.0]) });
         L.tileLayer('https://{s}.tile.openstreetmap.org/{z}/{x}/{y}.png', { maxZoom: 18 }).addTo(map);
         var markers = L.markerClusterGroup({ chunkedLoading: true, maxClusterRadius: 40, disableClusteringAtZoom: 9 });
+
+        // 🌟 收折面板的切換邏輯
+        window.togglePanel = function() {
+            var content = document.getElementById('panelContent');
+            var icon = document.getElementById('toggleIcon');
+            if (content.style.display === 'none') {
+                content.style.display = 'block';
+                icon.innerText = '▼';
+            } else {
+                content.style.display = 'none';
+                icon.innerText = '▲';
+            }
+        };
+
+        // 🌟 網頁載入時，如果是手機螢幕，就預設收起面板
+        if (window.innerWidth <= 768) {
+            document.getElementById('panelContent').style.display = 'none';
+            document.getElementById('toggleIcon').innerText = '▲';
+        }
 
         // 🌟 核心畫圖、篩選與統計邏輯
         window.renderMap = function() {
