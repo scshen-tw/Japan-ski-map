@@ -2,7 +2,7 @@
 <html lang="zh-TW">
 <head>
     <meta charset="utf-8">
-    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0, maximum-scale=1.0, user-scalable=no">
     <title>VIP 專屬日本雪場地圖</title>
     <link rel="stylesheet" href="https://unpkg.com/leaflet@1.9.4/dist/leaflet.css" />
     <link rel="stylesheet" href="https://unpkg.com/leaflet.markercluster@1.4.1/dist/MarkerCluster.css" />
@@ -11,7 +11,7 @@
         body { margin: 0; padding: 0; font-family: "Helvetica Neue", Helvetica, Arial, sans-serif; background-color: #f5f5f5; }
         #map { height: 100vh; width: 100%; background-color: #e5e3df; }
         
-        /* 🌟 右上角控制面板 */
+        /* 🌟 右上角控制面板 (電腦版預設) */
         .control-panel { position: absolute; top: 20px; right: 20px; z-index: 9999; background: white; padding: 15px; border-radius: 10px; box-shadow: 0 4px 15px rgba(0,0,0,0.3); border: 2px solid #2c3e50; width: 240px; }
         .control-panel h3 { margin: 0 0 8px 0; font-size: 15px; color: #2c3e50; font-weight: bold; }
         .control-panel select { width: 100%; padding: 8px; font-size: 15px; font-weight: bold; border-radius: 5px; border: 1px solid #bdc3c7; outline: none; cursor: pointer; margin-bottom: 8px; }
@@ -46,7 +46,7 @@
         .s-been { background: #2ecc71; } .s-been:hover { background: #27ae60; }
         .s-return { background: #f1c40f; color: #8a6d3b; } .s-return:hover { background: #f39c12; color: white; }
         
-        /* 🌟 右下角霸氣浮水印 */
+        /* 🌟 右下角霸氣浮水印 (電腦版預設) */
         #watermark { 
             position: absolute; 
             bottom: 25px; 
@@ -62,6 +62,41 @@
             pointer-events: none; 
             text-align: center;
             box-shadow: 0 4px 10px rgba(0,0,0,0.2);
+        }
+
+        /* 📱 ＝＝＝＝ 手機版專屬縮放設定 (核心魔法) ＝＝＝＝ */
+        @media (max-width: 768px) {
+            /* 把右上角面板縮小到極致，但不影響閱讀 */
+            .control-panel { 
+                width: 160px; /* 寬度大幅縮小 */
+                padding: 8px; /* 內邊距變薄 */
+                top: 10px; 
+                right: 10px; 
+            }
+            .control-panel h3 { font-size: 12px; margin-bottom: 5px; }
+            .control-panel select { font-size: 12px; padding: 4px; margin-bottom: 5px; }
+            .control-panel hr { margin: 6px 0; }
+            
+            /* 縮小輸入框跟按鈕 */
+            .trail-filter-box input { padding: 4px; font-size: 12px; }
+            .trail-filter-box button { padding: 4px 8px; font-size: 12px; }
+            .filter-hint { font-size: 10px; margin-top: 4px; }
+            
+            /* 縮小儀表板數字字體 */
+            .stat-box { font-size: 11px; padding: 6px; }
+            .stat-highlight { font-size: 11px; margin-top: 4px; padding-top: 4px; }
+            .stat-highlight span { font-size: 13px; }
+
+            /* 把霸氣浮水印在手機上縮回精緻小巧的尺寸 */
+            #watermark { 
+                font-size: 12px; 
+                padding: 6px 10px; 
+                bottom: 15px; 
+                border-width: 2px; 
+            }
+
+            /* 避免手機彈出視窗超出版面 */
+            .popup-custom { min-width: 200px; }
         }
     </style>
 </head>
@@ -92,10 +127,10 @@
         <h3>📊 統計資訊</h3>
         <div class="stat-box">
             <div>全部雪場: <span id="s-total">0</span></div>
-            <div>🔴 想去的雪場: <span id="s-want">0</span></div>
-            <div>🟢 去過的雪場: <span id="s-been">0</span></div>
-            <div>🟡 去過還想去: <span id="s-return">0</span></div>
-            <div class="stat-highlight">目前畫面顯示: <span id="s-filtered">0</span></div>
+            <div>🔴 想去: <span id="s-want">0</span></div>
+            <div>🟢 去過: <span id="s-been">0</span></div>
+            <div>🟡 還想去: <span id="s-return">0</span></div>
+            <div class="stat-highlight">畫面顯示: <span id="s-filtered">0</span></div>
         </div>
     </div>
 
@@ -144,35 +179,29 @@
                 tMax = maxInput !== "" ? parseInt(maxInput) : 9999;
             }
 
-            // 準備計數器變數
             var countTotal = 0, countWant = 0, countBeen = 0, countReturn = 0, countFiltered = 0;
 
             allSkiResorts.forEach(function(resort) {
-                // 排除沒有有效座標的髒資料
                 if (!resort.lat || !resort.lng || resort.lat === 0) return; 
 
-                countTotal++; // 總雪場數 +1
+                countTotal++; 
 
                 var baseName = resort.name_ja || resort.name; 
                 var status = userStatus[baseName] || 'none';
 
-                // 統計各狀態的數量
                 if (status === 'want') countWant++;
                 if (status === 'been') countBeen++;
                 if (status === 'return') countReturn++;
 
-                // 【過濾器 1】下拉選單顏色過濾
                 if (currentFilter !== 'all' && status !== currentFilter) return;
 
-                // 【過濾器 2】藍色雪場的雪道數過濾
                 if (currentFilter === 'all' && hasTrailFilter && status === 'none') {
                     var trails = parseInt(resort.trails);
                     if (isNaN(trails) || trails < tMin || trails > tMax) {
-                        return; // 不符合條件就跳過
+                        return; 
                     }
                 }
 
-                // 能順利執行到這裡的，代表通過了所有篩選，準備畫在畫面上！
                 countFiltered++;
 
                 var titleZh = (resort.name_zh && resort.name_zh !== 'nan') ? ` <span style="color:#e67e22; font-size:16px;">(${resort.name_zh})</span>` : '';
@@ -211,7 +240,6 @@
             });
             map.addLayer(markers);
 
-            // 迴圈結束後，將計算好的數字更新到右側儀表板
             document.getElementById('s-total').innerText = countTotal;
             document.getElementById('s-want').innerText = countWant;
             document.getElementById('s-been').innerText = countBeen;
@@ -226,7 +254,7 @@
                 userStatus[resortName] = newStatus; 
             }
             localStorage.setItem('skiResortStatus', JSON.stringify(userStatus));
-            renderMap(); // 改變狀態後自動重新畫圖，並重算數字
+            renderMap(); 
         };
 
         renderMap();
