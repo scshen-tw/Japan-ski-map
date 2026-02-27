@@ -15,12 +15,12 @@
         .control-panel { position: absolute; top: 20px; right: 20px; z-index: 9999; background: white; padding: 15px; border-radius: 10px; box-shadow: 0 4px 15px rgba(0,0,0,0.3); border: 2px solid #2c3e50; width: 240px; transition: 0.3s; }
         
         /* 🌟 收折標題區塊 */
-        .panel-header { display: flex; justify-content: space-between; align-items: center; cursor: pointer; font-size: 16px; font-weight: bold; color: #2c3e50; }
-        .panel-header:hover { color: #2980b9; }
-        #toggleIcon { font-size: 14px; transition: transform 0.3s; }
+        .panel-header { display: flex; justify-content: space-between; align-items: center; cursor: pointer; font-size: 15px; font-weight: bold; color: #2c3e50; background: #ecf0f1; padding: 8px 12px; border-radius: 6px; margin-bottom: 5px;}
+        .panel-header:hover { background: #e0e6ed; color: #2980b9; }
+        #toggleIcon { font-size: 12px; transition: transform 0.3s; }
 
         /* 內容區塊 */
-        #panelContent { margin-top: 10px; }
+        #panelContent { margin-top: 5px; }
         
         .control-panel h3 { margin: 0 0 8px 0; font-size: 15px; color: #2c3e50; font-weight: bold; }
         .control-panel select { width: 100%; padding: 8px; font-size: 15px; font-weight: bold; border-radius: 5px; border: 1px solid #bdc3c7; outline: none; cursor: pointer; margin-bottom: 8px; }
@@ -75,8 +75,8 @@
 
         /* 📱 手機版專屬縮放設定 */
         @media (max-width: 768px) {
-            .control-panel { width: 180px; padding: 10px; top: 10px; right: 10px; }
-            .panel-header { font-size: 14px; }
+            .control-panel { width: 190px; padding: 10px; top: 10px; right: 10px; }
+            .panel-header { font-size: 13px; padding: 6px 10px; }
             .control-panel h3 { font-size: 13px; margin-bottom: 5px; }
             .control-panel select { font-size: 13px; padding: 5px; margin-bottom: 5px; }
             .control-panel hr { margin: 8px 0; }
@@ -95,7 +95,7 @@
 
     <div class="control-panel">
         <div class="panel-header" onclick="togglePanel()">
-            <span>⚙️ 資訊視窗收折</span>
+            <span id="panelTitleText">資訊視窗縮小</span>
             <span id="toggleIcon">▼</span>
         </div>
         
@@ -161,24 +161,22 @@
         L.tileLayer('https://{s}.tile.openstreetmap.org/{z}/{x}/{y}.png', { maxZoom: 18 }).addTo(map);
         var markers = L.markerClusterGroup({ chunkedLoading: true, maxClusterRadius: 40, disableClusteringAtZoom: 9 });
 
-        // 🌟 收折面板的切換邏輯
+        // 🌟 改變按鈕的文字與收折邏輯
         window.togglePanel = function() {
             var content = document.getElementById('panelContent');
             var icon = document.getElementById('toggleIcon');
+            var titleText = document.getElementById('panelTitleText');
+            
             if (content.style.display === 'none') {
                 content.style.display = 'block';
                 icon.innerText = '▼';
+                titleText.innerText = '資訊視窗縮小'; // 展開狀態，提示可縮小
             } else {
                 content.style.display = 'none';
                 icon.innerText = '▲';
+                titleText.innerText = '資訊視窗展開'; // 縮小狀態，提示可展開
             }
         };
-
-        // 🌟 網頁載入時，如果是手機螢幕，就預設收起面板
-        if (window.innerWidth <= 768) {
-            document.getElementById('panelContent').style.display = 'none';
-            document.getElementById('toggleIcon').innerText = '▲';
-        }
 
         // 🌟 核心畫圖、篩選與統計邏輯
         window.renderMap = function() {
